@@ -1,0 +1,26 @@
+# Documents
+~$ok Club Companion.docx
+Book Club Companion.docx
+
+# Node.js
+node_modules/
+dist/
+.env
+.env.local
+*.log
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+appsettings.Development.json
+
+# IDEs
+.vs/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
