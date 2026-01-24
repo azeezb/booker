@@ -14,11 +14,9 @@ bin/
 obj/
 *.user
 *.suo
-appsettings.Development.json
 
 # IDEs
 .vs/
-.vscode/
 .idea/
 
 # OS
