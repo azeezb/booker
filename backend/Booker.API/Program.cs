@@ -1,9 +1,10 @@
+using Scalar.AspNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApi();
 
 // CORS - Allow frontend to call API
 builder.Services.AddCors(options =>
@@ -23,12 +24,9 @@ var app = builder.Build();
 Console.WriteLine("Starting Booker API...");
 Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
 
-// Enable Swagger
-app.UseSwagger();
-Console.WriteLine("Swagger enabled at /swagger/v1/swagger.json");
-
-app.UseSwaggerUI();
-Console.WriteLine("SwaggerUI enabled at /swagger");
+app.MapOpenApi();
+app.MapScalarApiReference();
+Console.WriteLine("Scalar API reference enabled at /scalar/v1");
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
