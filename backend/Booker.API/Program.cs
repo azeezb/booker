@@ -1,8 +1,8 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
@@ -18,9 +18,18 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Auth0 JWT authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = $"https://{builder.Configuration["Auth0:Domain"]}/";
+        options.Audience = builder.Configuration["Auth0:Audience"];
+    });
+
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
-// Log to console
 Console.WriteLine("Starting Booker API...");
 Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
 
@@ -30,6 +39,7 @@ Console.WriteLine("Scalar API reference enabled at /scalar/v1");
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
