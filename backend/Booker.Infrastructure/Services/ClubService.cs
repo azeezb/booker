@@ -1,5 +1,3 @@
-using Booker.Core.Interfaces;
-
 namespace Booker.Infrastructure.Services;
 
 public class ClubService(IClubRepository clubRepository) : IClubService
@@ -12,6 +10,12 @@ public class ClubService(IClubRepository clubRepository) : IClubService
 
     public async Task<Club?> GetByIdAsync(Guid id)
         => await clubRepository.GetByIdAsync(id);
+
+    public async Task<List<ClubMember>> GetMembersAsync(Guid clubId)
+        => await clubRepository.GetMembersAsync(clubId);
+
+    public async Task<ClubMember?> GetMemberAsync(Guid clubId, Guid userId)
+        => await clubRepository.GetMemberAsync(clubId, userId);
 
     public async Task<Club> CreateClubAsync(Guid userId, string name, string description, bool isPublic)
     {
@@ -54,5 +58,13 @@ public class ClubService(IClubRepository clubRepository) : IClubService
         });
 
         return true;
+    }
+
+    public async Task<Club?> UpdateFrequencyAsync(Guid clubId, MeetingFrequency? frequency)
+    {
+        var club = await clubRepository.GetByIdAsync(clubId);
+        if (club is null) return null;
+        club.MeetingFrequency = frequency;
+        return await clubRepository.UpdateAsync(club);
     }
 }

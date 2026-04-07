@@ -8,4 +8,5 @@ public class Club
     public Guid CreatedBy { get; set; }
     public bool IsPublic { get; set; }
     public DateTime CreatedAt { get; set; }
+    public MeetingFrequency? MeetingFrequency { get; set; }
 }

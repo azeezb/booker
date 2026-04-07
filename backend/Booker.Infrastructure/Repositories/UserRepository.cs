@@ -1,5 +1,3 @@
-using Booker.Core.Interfaces;
-
 namespace Booker.Infrastructure.Repositories;
 
 public class UserRepository(BookerDbContext db) : IUserRepository

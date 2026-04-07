@@ -78,10 +78,44 @@ COMPLETED:
 - Endpoint naming: all singular (/club, /user) for cleaner network tab
 
 KNOWN ISSUES / NOTES:
-- Clicking a club card does nothing — no club detail page yet
 - Books page is a placeholder
 - Account page is a placeholder
 - No book management endpoints (table + entity exist, no API)
+- Mobile safe area insets not applied (needed before PWA)
+- Redis wired in Docker but not used in app yet
+
+---
+
+SESSION 3 - 2026-04-07
+-----------------------
+COMPLETED:
+- Data model redesign: ClubBook replaced by Meeting entity
+  - Meeting: Id, ClubId, BookId (nullable), ScheduledDate, AddedByUserId, Notes?, CreatedAt
+  - Club gains MeetingFrequency (nullable string enum: Fortnightly | Monthly)
+  - MeetingFrequency enum stored as string in DB via HasConversion<string>()
+  - Migration: AddMeetingsDropClubBooks — drops ClubBooks, adds Meetings + MeetingFrequency column
+
+- New backend endpoints:
+  - GET  /api/club/{id}/member         — members list with user name + role [auth, members only]
+  - PATCH /api/club/{id}/frequency     — update meeting frequency [auth, owner only]
+  - GET  /api/club/{id}/meeting        — all meetings ordered by date desc [auth, members only]
+  - POST /api/club/{id}/meeting        — create meeting with date + notes [auth, owner only]
+  - PATCH /api/club/{id}/meeting/{id}  — update date, bookId, notes [auth, owner only]
+  - IMeetingRepository + MeetingRepository + IMeetingService + MeetingService
+
+- ClubDetail page (src/pages/ClubDetail.tsx):
+  - Club name, description, public/private badge, created date
+  - Meeting frequency selector (owner only) — updates live
+  - Members list with avatar initial + name + owner badge
+  - Meetings list: date, past/upcoming badge, book (or placeholder), notes
+  - Add meeting modal: manual date input + notes, pre-filled with suggested next date
+  - Suggested next date shown below meetings list when frequency is set
+  - ClubCard now navigates to /clubs/:id on click (members only)
+
+KNOWN ISSUES / NOTES:
+- Meeting cards have no book attached yet — book search not built
+- Books page is a placeholder
+- Account page is a placeholder
 - Mobile safe area insets not applied (needed before PWA)
 - Redis wired in Docker but not used in app yet
 

@@ -7,4 +7,7 @@ public interface IClubService
     Task<Club?> GetByIdAsync(Guid id);
     Task<Club> CreateClubAsync(Guid userId, string name, string description, bool isPublic);
     Task<bool> JoinClubAsync(Guid clubId, Guid userId);
+    Task<List<ClubMember>> GetMembersAsync(Guid clubId);
+    Task<ClubMember?> GetMemberAsync(Guid clubId, Guid userId);
+    Task<Club?> UpdateFrequencyAsync(Guid clubId, MeetingFrequency? frequency);
 }

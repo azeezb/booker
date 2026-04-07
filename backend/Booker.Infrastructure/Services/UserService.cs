@@ -1,5 +1,3 @@
-using Booker.Core.Interfaces;
-
 namespace Booker.Infrastructure.Services;
 
 public class UserService(IUserRepository userRepository) : IUserService

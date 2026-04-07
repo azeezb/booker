@@ -1,9 +1,9 @@
 NEXT SESSION PLAN
 =================
-GOAL: Club detail page + add a book to a club.
+GOAL: Add a book to a meeting.
 
-Clubs exist and you can create/join them, but tapping a card does nothing.
-The natural next step is making clubs useful — see who's in them and add a book.
+The club detail page is built — members, meetings, frequency, retroactive add all work.
+The natural next step is letting the owner attach a book to a meeting via Google Books search.
 
 --- START COMMANDS ---
 # Terminal 1 — repo root
@@ -17,65 +17,45 @@ dotnet run
 cd frontend
 npm run dev
 
---- PART 1: Club Detail Page ---
-
-1. Add route in App.tsx:
-   <Route path="/clubs/:id" element={<ClubDetail />} />
-
-2. Make ClubCard navigate on click:
-   const navigate = useNavigate()
-   onClick={() => navigate(`/clubs/${club.id}`)}
-
-3. Create ClubDetail.tsx page (src/pages/ClubDetail.tsx):
-   - Fetch club by ID: GET /api/club/{id}
-   - Show club name, description, public/private badge
-   - Member list (need new endpoint — see Part 2)
-
-4. Add GET /api/club/{id}/member endpoint (ClubController):
-   - Returns list of ClubMembers with User details (name)
-   - Joins ClubMembers → Users
-   - Add IClubRepository.GetMembersAsync(clubId)
-   - Only members can call this [Authorize + membership check]
-
-5. Frontend:
-   - useClubMembers(clubId) hook
-   - MemberList component: avatar initial + name + role badge
-
---- PART 2: Add a Book to a Club ---
+--- PART 1: Google Books + Book endpoints ---
 
 Backend:
-6. Google Books API service (Booker.Infrastructure/Services/GoogleBooksService.cs):
-   - SearchBooks(query) → calls https://www.googleapis.com/books/v1/volumes?q=...
-   - GetBookByGoogleId(id) → single volume lookup
-   - Map to Book entity
-   - Store API key in appsettings (get free key from Google Cloud Console)
+1. GoogleBooksService (Booker.Infrastructure/Services/GoogleBooksService.cs):
+   - SearchBooks(query) → GET https://www.googleapis.com/books/v1/volumes?q=...
+   - Map to a BookSearchResult DTO (googleId, title, author, coverUrl, isbn)
+   - Store API key in appsettings.json (free key from Google Cloud Console)
+   - Register as IBookSearchService in Program.cs
 
-7. Book endpoints (new BookController.cs, route: /api/book):
-   GET  /api/book/search?q={query}   — search Google Books, return results
-   POST /api/book                    — save a book to the DB (if not already there)
+2. BookController (Booker.API/Controllers/BookController.cs, route: /api/book):
+   GET  /api/book/search?q={query}  — calls GoogleBooksService, returns DTO list (no DB write)
+   POST /api/book                   — upsert: save book to DB by ISBN if not already there, return Book
 
-8. ClubBook endpoint:
-   POST /api/club/{id}/book          — add a book to a club (body: bookId, status)
-   GET  /api/club/{id}/book          — list books in a club
+--- PART 2: Attach book to a meeting ---
+
+Backend:
+3. MeetingController already has PATCH /api/club/{id}/meeting/{meetingId}
+   - Body accepts BookId (Guid) — already wired
+   - The POST /api/book endpoint returns a Guid after upsert, use that as BookId
 
 Frontend:
-9. BookSearch.tsx component:
-   - Text input → debounced search → results from GET /api/book/search
-   - Each result: cover thumbnail, title, author, "Add" button
+4. BookSearch.tsx component (src/components/clubs/BookSearch.tsx):
+   - Text input → debounced (300ms) → GET /api/book/search?q=...
+   - Results list: cover thumbnail, title, author, "Select" button
+   - On select: POST /api/book to upsert → get back Guid → PATCH meeting with bookId
 
-10. Wire into ClubDetail page:
-    - "Add a book" button → opens BookSearch modal
-    - On select: POST /api/club/{id}/book
-    - Club book list renders below members
+5. Wire into ClubDetail:
+   - Each meeting card (owner view): "Add book" button if no book, "Change book" if one exists
+   - Opens BookSearch in a bottom sheet modal
+   - On success: invalidate meetings query → card updates inline
 
---- PART 3: Club Books List ---
+--- PART 3: Meeting card polish ---
 
-11. ClubBookCard.tsx — shows cover, title, author, status badge (reading / completed / upcoming)
-12. GET /api/club/{id}/book — fetches ClubBooks joined with Books
-13. useClubBooks(clubId) hook
+6. If a meeting has a book and a cover URL, show the cover thumbnail on the meeting card
+   - Small 40×60px cover on the left, text on the right
+   - Keep "No book selected" placeholder when empty
 
 --- FUTURE FEATURE: Local Bookstore Stock ---
-When a book is being viewed or added to a club, surface nearby independent
+When a book is being viewed or added to a meeting, surface nearby independent
 bookstore availability so members can buy local instead of Amazon.
 
 Approach:
@@ -84,7 +64,7 @@ Approach:
 - Backend: GET /api/book/{id}/stock?postcode={postcode}
   - Calls Bookshop.org / IndieBound API with ISBN + location
   - Returns list of nearby stores with stock status + link to buy
-- Frontend: "Find in a local store" button on BookDetail — shows store list in a sheet/modal
+- Frontend: "Find in a local store" button on meeting card — shows store list in a sheet/modal
 - Cache results in Redis by ISBN + postcode (stock data changes slowly, 6hr TTL is fine)
 
 --- FUTURE FEATURE: Book Voting ---
@@ -98,18 +78,17 @@ Club members nominate and vote on the next book democratically.
   POST /api/club/{id}/nomination      — member nominates a book
   POST /api/nomination/{id}/vote      — member casts vote
   GET  /api/club/{id}/vote            — current nominations + vote counts
-  POST /api/club/{id}/vote/close      — admin closes, winner becomes next ClubBook
+  POST /api/club/{id}/vote/close      — admin closes, winner attached to next meeting
 - Frontend: VotingBallot.tsx — list of nominated books with vote counts, Vote button per entry
 
 --- FUTURE FEATURE: Book Rating ---
 Members rate and review the book the club just finished.
 
-- Add rating (1–5) + review (text, optional) fields to ClubBook per user
-- New table: ClubBookRating (id, club_book_id, user_id, rating, review, created_at)
+- New table: MeetingRating (id, meeting_id, user_id, rating 1–5, review text?, created_at)
 - Backend:
-  POST /api/club/{id}/book/{bookId}/rating   — submit or update rating
-  GET  /api/club/{id}/book/{bookId}/rating   — all ratings for a club book
-- Frontend: star rating widget on ClubBookCard for completed books, aggregate score shown
+  POST /api/club/{id}/meeting/{meetingId}/rating   — submit or update rating
+  GET  /api/club/{id}/meeting/{meetingId}/rating   — all ratings for a meeting
+- Frontend: star rating widget on past meeting cards, aggregate score shown
 
 --- FUTURE FEATURE: Theme Suggestion Box ---
 Members can anonymously suggest themes for the next book pick (e.g. "something gothic", "set in Japan").
@@ -122,7 +101,7 @@ Members can anonymously suggest themes for the next book pick (e.g. "something g
 - Frontend: simple text input + list in club dashboard, shown before voting opens
 
 --- NOTES ---
-- Google Books API free tier: 1000 req/day, no key needed for low volume but add one anyway
-- Cache book searches in memory (React Query staleTime) — no Redis needed yet
-- Status values for ClubBook: "upcoming" | "reading" | "completed"
-- Don't build reading progress tracking this session — just get a book attached to a club
+- Google Books API free tier: 1000 req/day, no key needed for low volume but get one anyway
+- Cache book search results in React Query (staleTime: 60s) — no Redis needed yet
+- ISBN may be missing for some Google Books results — handle gracefully (omit on upsert, don't unique-index fail)
+- MeetingController.UpdateAsync already accepts BookId — no backend model changes needed

@@ -1,6 +1,3 @@
-using Booker.Core.Interfaces;
-using Booker.Infrastructure.Repositories;
-using Booker.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Scalar.AspNetCore;
 
@@ -38,6 +35,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IClubRepository, ClubRepository>();
 builder.Services.AddScoped<IClubService, ClubService>();
+builder.Services.AddScoped<IMeetingRepository, MeetingRepository>();
+builder.Services.AddScoped<IMeetingService, MeetingService>();
 
 var app = builder.Build();
 

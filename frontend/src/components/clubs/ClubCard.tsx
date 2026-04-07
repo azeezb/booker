@@ -1,4 +1,5 @@
 import { Users } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import type { Club } from '../../types'
 
 interface Props {
@@ -8,8 +9,17 @@ interface Props {
 }
 
 export default function ClubCard({ club, isMember, onJoin }: Props) {
+  const navigate = useNavigate()
+
+  const handleClick = () => {
+    if (isMember) navigate(`/clubs/${club.id}`)
+  }
+
   return (
-    <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-5 border border-white/40 shadow-sm">
+    <div
+      onClick={handleClick}
+      className={`bg-white/60 backdrop-blur-sm rounded-2xl p-5 border border-white/40 shadow-sm ${isMember ? 'cursor-pointer hover:bg-white/80 transition-colors' : ''}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-display text-xl font-light text-stone-800 leading-tight truncate">
@@ -36,7 +46,7 @@ export default function ClubCard({ club, isMember, onJoin }: Props) {
 
         {onJoin && !isMember && (
           <button
-            onClick={() => onJoin(club.id)}
+            onClick={(e) => { e.stopPropagation(); onJoin(club.id) }}
             className="text-xs font-sans tracking-wide text-stone-600 border border-stone-300 rounded-full px-3 py-1 hover:bg-stone-800 hover:text-white hover:border-stone-800 transition-all"
           >
             Join
