@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
 import { createApiClient } from '../lib/apiClient'
-import { syncUser, getMe } from '../api/users'
+import { syncUser, getMe, getNextMeeting } from '../api/users'
 
 export function useCurrentUser() {
   const { user, getAccessTokenSilently } = useAuth0()
@@ -23,6 +23,21 @@ export function useCurrentUser() {
         const synced = await syncUser(client, name, email)
         queryClient.setQueryData(['user', 'me'], synced)
         return synced
+      }
+    },
+  })
+}
+
+export function useNextMeeting() {
+  const { getAccessTokenSilently } = useAuth0()
+  return useQuery({
+    queryKey: ['user', 'next-meeting'],
+    queryFn: async () => {
+      const token = await getAccessTokenSilently()
+      try {
+        return await getNextMeeting(createApiClient(token))
+      } catch {
+        return null
       }
     },
   })

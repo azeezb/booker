@@ -27,7 +27,7 @@ export interface MeetingBook {
   id: string
   title: string
   author: string
-  coverUrl: string
+  coverUrl: string | null
 }
 
 export interface Meeting {

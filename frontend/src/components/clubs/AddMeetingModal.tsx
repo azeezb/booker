@@ -23,8 +23,8 @@ export default function AddMeetingModal({ clubId, suggestedDate, onClose }: Prop
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-white rounded-t-3xl p-6 pb-10 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm px-4">
+      <div className="w-full max-w-lg bg-white rounded-3xl p-6 shadow-xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display text-2xl font-light text-stone-800">Add meeting</h2>
           <button onClick={onClose} className="text-stone-400 hover:text-stone-600">

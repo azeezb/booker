@@ -5,6 +5,9 @@ public class MeetingService(IMeetingRepository meetingRepository) : IMeetingServ
     public async Task<List<Meeting>> GetByClubIdAsync(Guid clubId)
         => await meetingRepository.GetByClubIdAsync(clubId);
 
+    public async Task<Meeting?> GetNextForUserAsync(Guid userId)
+        => await meetingRepository.GetNextForUserAsync(userId);
+
     public async Task<Meeting> CreateAsync(Guid clubId, Guid addedByUserId, DateTime scheduledDate, string? notes)
     {
         var meeting = new Meeting

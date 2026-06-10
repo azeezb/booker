@@ -77,13 +77,6 @@ COMPLETED:
 
 - Endpoint naming: all singular (/club, /user) for cleaner network tab
 
-KNOWN ISSUES / NOTES:
-- Books page is a placeholder
-- Account page is a placeholder
-- No book management endpoints (table + entity exist, no API)
-- Mobile safe area insets not applied (needed before PWA)
-- Redis wired in Docker but not used in app yet
-
 ---
 
 SESSION 3 - 2026-04-07
@@ -112,9 +105,35 @@ COMPLETED:
   - Suggested next date shown below meetings list when frequency is set
   - ClubCard now navigates to /clubs/:id on click (members only)
 
+---
+
+SESSION 4 - 2026-06-09
+-----------------------
+COMPLETED:
+- Book entity updated: Isbn nullable, GoogleBookId added (unique index), Pages nullable, CoverUrl nullable
+  - Migration: UpdateBookEntity
+- GoogleBooksService (IBookSearchService) — searches Google Books API, maps to BookSearchResult DTO
+  - API key stored in appsettings.Development.json
+  - Registered via AddHttpClient<IBookSearchService, GoogleBooksService>()
+- BookController:
+  - GET  /api/book/search?q={query} — calls GoogleBooksService, no DB write
+  - POST /api/book                  — upsert by GoogleBookId, returns Book with Guid
+- IBookRepository + BookRepository + IBookService + BookService
+- BookSearchModal.tsx — debounced search, cover thumbnails, Select → upsert → PATCH meeting
+- Meeting cards updated: cover thumbnail (40×60px), "Add book" / "Change book" button (owner only)
+- Home page redesigned:
+  - Nav "Books" renamed to "Home", points to /
+  - Shows next upcoming meeting card across all user's clubs
+  - Book cover, title, author, reading time estimate (pages ÷ 60 hrs)
+  - Book description fetched live from Google Books API using googleBookId
+  - Date countdown ("In X days" / "Tomorrow" / "Today")
+  - Club name shown below date
+  - Clicking card navigates to ClubDetail
+- GET /api/user/next-meeting — finds soonest upcoming meeting across user's clubs
+- Framer Motion page transitions (150ms fade + 6px lift, exit fade only)
+
 KNOWN ISSUES / NOTES:
-- Meeting cards have no book attached yet — book search not built
-- Books page is a placeholder
+- Page transitions animate in before data loads (double visual update) — not yet fixed
 - Account page is a placeholder
 - Mobile safe area insets not applied (needed before PWA)
 - Redis wired in Docker but not used in app yet

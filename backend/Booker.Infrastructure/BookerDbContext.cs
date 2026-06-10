@@ -36,7 +36,8 @@ public class BookerDbContext(DbContextOptions<BookerDbContext> options) : DbCont
         modelBuilder.Entity<Book>(e =>
         {
             e.HasKey(b => b.Id);
-            e.HasIndex(b => b.Isbn).IsUnique();
+            e.HasIndex(b => b.GoogleBookId).IsUnique();
+            e.HasIndex(b => b.Isbn).IsUnique().HasFilter("\"Isbn\" IS NOT NULL");
         });
 
         modelBuilder.Entity<Meeting>(e =>

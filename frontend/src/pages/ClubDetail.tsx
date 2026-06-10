@@ -4,6 +4,7 @@ import { ArrowLeft, BookOpen, Calendar, ChevronDown, Users } from 'lucide-react'
 import { useClub, useClubMembers, useClubMeetings, useUpdateFrequency } from '../hooks/useClubs'
 import { useCurrentUser } from '../hooks/useUser'
 import AddMeetingModal from '../components/clubs/AddMeetingModal'
+import BookSearchModal from '../components/clubs/BookSearchModal'
 import type { Meeting } from '../types'
 
 const FREQUENCY_OPTIONS = [
@@ -45,6 +46,7 @@ export default function ClubDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [showAddMeeting, setShowAddMeeting] = useState(false)
+  const [bookMeetingId, setBookMeetingId] = useState<string | null>(null)
 
   const { data: club, isLoading: clubLoading } = useClub(id!)
   const { data: members = [] } = useClubMembers(id!)
@@ -171,28 +173,45 @@ export default function ClubDetail() {
                 key={m.id}
                 className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/40 shadow-sm"
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  {/* Cover thumbnail */}
+                  {m.book?.coverUrl ? (
+                    <img
+                      src={m.book.coverUrl}
+                      alt={m.book.title}
+                      className="w-10 h-14 object-cover rounded-lg shrink-0 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-10 h-14 bg-stone-100 rounded-lg shrink-0 flex items-center justify-center">
+                      <BookOpen size={14} strokeWidth={1.5} className="text-stone-300" />
+                    </div>
+                  )}
+
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-sans text-sm font-medium text-stone-700">
-                        {formatDate(m.scheduledDate)}
-                      </span>
-                      <MeetingStatus date={m.scheduledDate} />
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-sans text-sm font-medium text-stone-700">
+                          {formatDate(m.scheduledDate)}
+                        </span>
+                        <MeetingStatus date={m.scheduledDate} />
+                      </div>
+                      {isOwner && (
+                        <button
+                          onClick={() => setBookMeetingId(m.id)}
+                          className="shrink-0 text-[11px] font-sans text-stone-400 hover:text-stone-700 transition-colors"
+                        >
+                          {m.book ? 'Change book' : 'Add book'}
+                        </button>
+                      )}
                     </div>
 
                     {m.book ? (
-                      <div className="flex items-center gap-2 mt-2">
-                        <BookOpen size={13} strokeWidth={1.5} className="text-stone-400 shrink-0" />
-                        <span className="font-sans text-sm text-stone-600 truncate">
-                          {m.book.title}
-                          <span className="text-stone-400"> · {m.book.author}</span>
-                        </span>
-                      </div>
+                      <p className="font-sans text-sm text-stone-600 truncate">
+                        {m.book.title}
+                        <span className="text-stone-400"> · {m.book.author}</span>
+                      </p>
                     ) : (
-                      <div className="flex items-center gap-2 mt-2">
-                        <BookOpen size={13} strokeWidth={1.5} className="text-stone-300 shrink-0" />
-                        <span className="font-sans text-xs text-stone-300 italic">No book selected</span>
-                      </div>
+                      <p className="font-sans text-xs text-stone-300 italic">No book selected</p>
                     )}
 
                     {m.notes && (
@@ -229,6 +248,14 @@ export default function ClubDetail() {
           clubId={id!}
           suggestedDate={suggested}
           onClose={() => setShowAddMeeting(false)}
+        />
+      )}
+
+      {bookMeetingId && (
+        <BookSearchModal
+          clubId={id!}
+          meetingId={bookMeetingId}
+          onClose={() => setBookMeetingId(null)}
         />
       )}
     </div>

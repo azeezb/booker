@@ -1,9 +1,6 @@
 NEXT SESSION PLAN
 =================
-GOAL: Add a book to a meeting.
-
-The club detail page is built — members, meetings, frequency, retroactive add all work.
-The natural next step is letting the owner attach a book to a meeting via Google Books search.
+GOAL: Reading status checks + fix page transition double-load.
 
 --- START COMMANDS ---
 # Terminal 1 — repo root
@@ -17,55 +14,74 @@ dotnet run
 cd frontend
 npm run dev
 
---- PART 1: Google Books + Book endpoints ---
+--- PART 1: Fix page transition double-load ---
+
+The page animates in while data is still loading, causing a double visual update.
+Fix: use useSuspenseQuery for main data hooks + Suspense boundary in PageTransition.
+
+1. In PageTransition.tsx, wrap children in <Suspense fallback={null}>
+2. Change these hooks from useQuery → useSuspenseQuery:
+   - useNextMeeting (useUser.ts)
+   - useMyClubs, usePublicClubs, useClub, useClubMembers, useClubMeetings (useClubs.ts)
+3. Remove isLoading guards from pages — with useSuspenseQuery the component
+   never renders in a loading state, it suspends instead
+4. Keep useCurrentUser as useQuery (has special sync fallback logic that doesn't
+   work with useSuspenseQuery)
+
+--- PART 2: Reading status feature ---
+
+Each club member can mark "Got the book?" and "Started reading?" for the upcoming meeting.
+The home card shows a bubble: "X/Y started · Z/Y got it"
 
 Backend:
-1. GoogleBooksService (Booker.Infrastructure/Services/GoogleBooksService.cs):
-   - SearchBooks(query) → GET https://www.googleapis.com/books/v1/volumes?q=...
-   - Map to a BookSearchResult DTO (googleId, title, author, coverUrl, isbn)
-   - Store API key in appsettings.json (free key from Google Cloud Console)
-   - Register as IBookSearchService in Program.cs
+1. New entity: MeetingReadingStatus
+   (Id, MeetingId, UserId, GotBook bool, StartedReading bool, UpdatedAt)
+   - Composite unique index: (MeetingId, UserId)
+   - Cascade delete on Meeting and User
 
-2. BookController (Booker.API/Controllers/BookController.cs, route: /api/book):
-   GET  /api/book/search?q={query}  — calls GoogleBooksService, returns DTO list (no DB write)
-   POST /api/book                   — upsert: save book to DB by ISBN if not already there, return Book
+2. Migration: AddMeetingReadingStatus
 
---- PART 2: Attach book to a meeting ---
+3. New endpoints on MeetingController:
+   PATCH /api/club/{clubId}/meeting/{meetingId}/reading-status
+     - Body: { gotBook: bool, startedReading: bool }
+     - Upserts the current user's status for that meeting
+     - [auth, members only]
+   GET /api/club/{clubId}/meeting/{meetingId}/reading-status
+     - Returns aggregate counts + current user's own status
+     - { totalMembers, gotBook: count, startedReading: count, myStatus: { gotBook, startedReading } }
+     - [auth, members only]
 
-Backend:
-3. MeetingController already has PATCH /api/club/{id}/meeting/{meetingId}
-   - Body accepts BookId (Guid) — already wired
-   - The POST /api/book endpoint returns a Guid after upsert, use that as BookId
+4. Update GET /api/user/next-meeting to include reading status summary:
+   - Add readingStatus: { totalMembers, gotBook, startedReading, myGotBook, myStartedReading }
+
+5. IMeetingReadingStatusRepository + MeetingReadingStatusRepository
+   IMeetingReadingStatusService + MeetingReadingStatusService
+   Register both in Program.cs
 
 Frontend:
-4. BookSearch.tsx component (src/components/clubs/BookSearch.tsx):
-   - Text input → debounced (300ms) → GET /api/book/search?q=...
-   - Results list: cover thumbnail, title, author, "Select" button
-   - On select: POST /api/book to upsert → get back Guid → PATCH meeting with bookId
+6. Add types in src/types/index.ts:
+   ReadingStatus { totalMembers, gotBook, startedReading, myGotBook, myStartedReading }
+   Update NextMeeting type to include readingStatus
 
-5. Wire into ClubDetail:
-   - Each meeting card (owner view): "Add book" button if no book, "Change book" if one exists
-   - Opens BookSearch in a bottom sheet modal
-   - On success: invalidate meetings query → card updates inline
+7. ReadingStatusBubble.tsx (src/components/clubs/ReadingStatusBubble.tsx):
+   - Floated to the right of the home meeting card
+   - Two toggle rows: "Got the book?" (checkmark) + "Started reading?" (checkmark)
+   - Below toggles: "X/Y started" count in small text
+   - Tapping a toggle calls PATCH reading-status, invalidates next-meeting query
+   - Visual: rounded pill/card, stone-50 bg, subtle border
 
---- PART 3: Meeting card polish ---
+8. Wire into Home.tsx:
+   - Render ReadingStatusBubble alongside the meeting card
+   - Only show if meeting has a book attached
 
-6. If a meeting has a book and a cover URL, show the cover thumbnail on the meeting card
-   - Small 40×60px cover on the left, text on the right
-   - Keep "No book selected" placeholder when empty
+--- FUTURE FEATURE: Book Rating ---
+Members rate and review the book the club just finished.
 
---- FUTURE FEATURE: Local Bookstore Stock ---
-When a book is being viewed or added to a meeting, surface nearby independent
-bookstore availability so members can buy local instead of Amazon.
-
-Approach:
-- Use Bookshop.org affiliate API or IndieBound store locator (both support ISBN lookup)
-- Ask for user's location once (browser geolocation or manual postcode) — store on User record
-- Backend: GET /api/book/{id}/stock?postcode={postcode}
-  - Calls Bookshop.org / IndieBound API with ISBN + location
-  - Returns list of nearby stores with stock status + link to buy
-- Frontend: "Find in a local store" button on meeting card — shows store list in a sheet/modal
-- Cache results in Redis by ISBN + postcode (stock data changes slowly, 6hr TTL is fine)
+- New table: MeetingRating (id, meeting_id, user_id, rating 1–5, review text?, created_at)
+- Backend:
+  POST /api/club/{id}/meeting/{meetingId}/rating   — submit or update rating
+  GET  /api/club/{id}/meeting/{meetingId}/rating   — all ratings for a meeting
+- Frontend: star rating widget on past meeting cards, aggregate score shown
 
 --- FUTURE FEATURE: Book Voting ---
 Club members nominate and vote on the next book democratically.
@@ -81,14 +97,12 @@ Club members nominate and vote on the next book democratically.
   POST /api/club/{id}/vote/close      — admin closes, winner attached to next meeting
 - Frontend: VotingBallot.tsx — list of nominated books with vote counts, Vote button per entry
 
---- FUTURE FEATURE: Book Rating ---
-Members rate and review the book the club just finished.
-
-- New table: MeetingRating (id, meeting_id, user_id, rating 1–5, review text?, created_at)
-- Backend:
-  POST /api/club/{id}/meeting/{meetingId}/rating   — submit or update rating
-  GET  /api/club/{id}/meeting/{meetingId}/rating   — all ratings for a meeting
-- Frontend: star rating widget on past meeting cards, aggregate score shown
+--- FUTURE FEATURE: Books Page ---
+Personal reading history and library across all clubs.
+Currently /books route exists but is unreachable from nav.
+- List of all books read (past meetings with books) across all user's clubs
+- Cover grid or list view
+- Tap to see which club read it, when, ratings
 
 --- FUTURE FEATURE: Theme Suggestion Box ---
 Members can anonymously suggest themes for the next book pick (e.g. "something gothic", "set in Japan").
@@ -100,8 +114,22 @@ Members can anonymously suggest themes for the next book pick (e.g. "something g
   DELETE /api/suggestion/{id}        — admin moderation
 - Frontend: simple text input + list in club dashboard, shown before voting opens
 
+--- FUTURE FEATURE: Local Bookstore Stock ---
+When a book is being viewed or added to a meeting, surface nearby independent
+bookstore availability so members can buy local instead of Amazon.
+
+- Use Bookshop.org affiliate API or IndieBound store locator (both support ISBN lookup)
+- Ask for user's location once (browser geolocation or manual postcode) — store on User record
+- Backend: GET /api/book/{id}/stock?postcode={postcode}
+- Frontend: "Find in a local store" button on meeting card
+
+--- FUTURE FEATURE: PWA / Mobile ---
+- Safe area insets (padding for notch/home bar)
+- manifest.json + service worker
+- Add to home screen prompt
+
 --- NOTES ---
-- Google Books API free tier: 1000 req/day, no key needed for low volume but get one anyway
-- Cache book search results in React Query (staleTime: 60s) — no Redis needed yet
-- ISBN may be missing for some Google Books results — handle gracefully (omit on upsert, don't unique-index fail)
-- MeetingController.UpdateAsync already accepts BookId — no backend model changes needed
+- useSuspenseQuery requires React Query v5 (already installed)
+- Reading status endpoint is members-only (not owner-only) — all members can check off
+- Composite unique index on (MeetingId, UserId) means PATCH is always an upsert
+- Redis still unused — good candidate for caching reading status counts later
