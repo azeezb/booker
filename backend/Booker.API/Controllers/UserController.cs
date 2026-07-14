@@ -5,7 +5,7 @@ public record UpdateUserRequest(string Name);
 
 [ApiController]
 [Route("api/user")]
-public class UserController(IUserService userService, IMeetingService meetingService) : ControllerBase
+public class UserController(IUserService userService, IMeetingService meetingService, IClubService clubService) : ControllerBase
 {
     [Authorize]
     [HttpGet]
@@ -58,6 +58,7 @@ public class UserController(IUserService userService, IMeetingService meetingSer
             {
                 meeting.Book.Id,
                 meeting.Book.GoogleBookId,
+                meeting.Book.Isbn,
                 meeting.Book.Title,
                 meeting.Book.Author,
                 meeting.Book.CoverUrl,
@@ -77,5 +78,24 @@ public class UserController(IUserService userService, IMeetingService meetingSer
 
         var user = await userService.UpdateUserAsync(auth0Id, request.Name);
         return user is null ? NotFound() : Ok(user);
+    }
+
+    [Authorize]
+    [HttpDelete]
+    public async Task<IActionResult> DeleteMe()
+    {
+        var auth0Id = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? User.FindFirstValue("sub");
+        if (auth0Id is null) return Unauthorized();
+
+        var user = await userService.GetByAuth0IdAsync(auth0Id);
+        if (user is null) return NotFound();
+
+        var clubs = await clubService.GetUserClubsAsync(user.Id);
+        foreach (var club in clubs)
+            await clubService.LeaveClubAsync(club.Id, user.Id);
+
+        await userService.DeleteUserAsync(auth0Id);
+        return NoContent();
     }
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, BookOpen, Calendar, ChevronDown, Users } from 'lucide-react'
-import { useClub, useClubMembers, useClubMeetings, useUpdateFrequency } from '../hooks/useClubs'
+import { ArrowLeft, BookOpen, Calendar, ChevronDown, Users, Pencil, X, Check } from 'lucide-react'
+import { useClub, useClubMembers, useClubMeetings, useUpdateFrequency, useUpdateClub, useLeaveClub, useRemoveMember } from '../hooks/useClubs'
 import { useCurrentUser } from '../hooks/useUser'
 import AddMeetingModal from '../components/clubs/AddMeetingModal'
 import BookSearchModal from '../components/clubs/BookSearchModal'
@@ -29,15 +29,21 @@ function suggestNextDate(meetings: Meeting[], frequency: 'Fortnightly' | 'Monthl
   return next.toISOString().split('T')[0]
 }
 
-function MeetingStatus({ date }: { date: string }) {
+function MeetingStatus({ date, isNearest }: { date: string; isNearest: boolean }) {
   const isPast = new Date(date) < new Date()
+  const isPlanned = !isPast && !isNearest
+
+  const styles = isPast
+    ? 'text-stone-400 border border-stone-200'
+    : isPlanned
+      ? 'text-stone-400 border border-stone-200 bg-stone-50'
+      : 'text-emerald-700 border border-emerald-200 bg-emerald-50'
+
+  const label = isPast ? 'Past' : isPlanned ? 'Planned' : 'Upcoming'
+
   return (
-    <span className={`text-[10px] font-sans tracking-widest uppercase rounded-full px-2 py-0.5 ${
-      isPast
-        ? 'text-stone-400 border border-stone-200'
-        : 'text-emerald-700 border border-emerald-200 bg-emerald-50'
-    }`}>
-      {isPast ? 'Past' : 'Upcoming'}
+    <span className={`text-[10px] font-sans tracking-widest uppercase rounded-full px-2 py-0.5 ${styles}`}>
+      {label}
     </span>
   )
 }
@@ -47,15 +53,39 @@ export default function ClubDetail() {
   const navigate = useNavigate()
   const [showAddMeeting, setShowAddMeeting] = useState(false)
   const [bookMeetingId, setBookMeetingId] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [confirmLeave, setConfirmLeave] = useState(false)
 
   const { data: club, isLoading: clubLoading } = useClub(id!)
   const { data: members = [] } = useClubMembers(id!)
   const { data: meetings = [] } = useClubMeetings(id!)
   const { data: currentUser } = useCurrentUser()
   const { mutate: updateFrequency } = useUpdateFrequency(id!)
+  const { mutate: updateClub, isPending: isSavingClub } = useUpdateClub(id!)
+  const { mutate: leaveClub, isPending: isLeaving } = useLeaveClub(id!)
+  const { mutate: removeMember } = useRemoveMember(id!)
 
   const isOwner = members.some(m => m.user.id === currentUser?.id && m.role === 'owner')
+  const isMember = members.some(m => m.user.id === currentUser?.id)
+
+  function startEditing() {
+    setEditName(club!.name)
+    setEditDescription(club!.description ?? '')
+    setEditing(true)
+  }
+
+  function saveEdit() {
+    if (!editName.trim()) return
+    updateClub({ name: editName.trim(), description: editDescription.trim() }, {
+      onSuccess: () => setEditing(false),
+    })
+  }
   const suggested = suggestNextDate(meetings, club?.meetingFrequency ?? null)
+  const nearestUpcomingId = meetings
+    .filter(m => new Date(m.scheduledDate) >= new Date())
+    .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())[0]?.id
 
   if (clubLoading) {
     return (
@@ -79,19 +109,59 @@ export default function ClubDetail() {
           Clubs
         </button>
 
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="font-display text-3xl font-light text-stone-800">{club.name}</h1>
-            {club.description && (
-              <p className="font-sans text-sm text-stone-500 mt-1">{club.description}</p>
+        {editing ? (
+          <div className="space-y-2">
+            <input
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              className="w-full font-display text-2xl font-light text-stone-800 bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-stone-400"
+            />
+            <textarea
+              value={editDescription}
+              onChange={e => setEditDescription(e.target.value)}
+              rows={2}
+              placeholder="Description (optional)"
+              className="w-full font-sans text-sm text-stone-600 bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-stone-400 resize-none placeholder:text-stone-300"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={saveEdit}
+                disabled={isSavingClub || !editName.trim()}
+                className="flex items-center gap-1.5 font-sans text-xs text-white bg-stone-800 rounded-full px-3 py-1.5 hover:bg-stone-700 transition-all disabled:opacity-50"
+              >
+                <Check size={11} strokeWidth={2.5} />
+                Save
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                className="font-sans text-xs text-stone-500 border border-stone-200 rounded-full px-3 py-1.5 hover:bg-stone-100 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-3xl font-light text-stone-800">{club.name}</h1>
+                {isOwner && (
+                  <button onClick={startEditing} className="text-stone-300 hover:text-stone-500 transition-colors mt-1">
+                    <Pencil size={14} strokeWidth={1.5} />
+                  </button>
+                )}
+              </div>
+              {club.description && (
+                <p className="font-sans text-sm text-stone-500 mt-1">{club.description}</p>
+              )}
+            </div>
+            {!club.isPublic && (
+              <span className="shrink-0 text-[10px] font-sans tracking-widest uppercase text-stone-400 border border-stone-200 rounded-full px-2 py-0.5 mt-1">
+                Private
+              </span>
             )}
           </div>
-          {!club.isPublic && (
-            <span className="shrink-0 text-[10px] font-sans tracking-widest uppercase text-stone-400 border border-stone-200 rounded-full px-2 py-0.5 mt-1">
-              Private
-            </span>
-          )}
-        </div>
+        )}
 
         <p className="font-sans text-xs text-stone-400 mt-2">
           Created {formatDate(club.createdAt)}
@@ -137,6 +207,15 @@ export default function ClubDetail() {
               <span className="font-sans text-xs text-stone-700">{m.user.name}</span>
               {m.role === 'owner' && (
                 <span className="text-[10px] font-sans tracking-widest uppercase text-stone-400">Owner</span>
+              )}
+              {isOwner && m.role !== 'owner' && (
+                <button
+                  onClick={() => removeMember(m.user.id)}
+                  className="text-stone-300 hover:text-red-400 transition-colors"
+                  title={`Remove ${m.user.name}`}
+                >
+                  <X size={12} strokeWidth={2} />
+                </button>
               )}
             </div>
           ))}
@@ -193,7 +272,7 @@ export default function ClubDetail() {
                         <span className="font-sans text-sm font-medium text-stone-700">
                           {formatDate(m.scheduledDate)}
                         </span>
-                        <MeetingStatus date={m.scheduledDate} />
+                        <MeetingStatus date={m.scheduledDate} isNearest={m.id === nearestUpcomingId} />
                       </div>
                       {isOwner && (
                         <button
@@ -242,6 +321,45 @@ export default function ClubDetail() {
           </div>
         )}
       </div>
+
+      {/* Leave club */}
+      {isMember && (
+        <div className="border-t border-stone-100 pt-6">
+          {!confirmLeave ? (
+            <button
+              onClick={() => setConfirmLeave(true)}
+              className="font-sans text-xs text-stone-400 hover:text-red-500 transition-colors"
+            >
+              Leave club
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <p className="font-sans text-xs text-stone-500">
+                {isOwner && members.length > 1
+                  ? 'Ownership will be transferred to another member.'
+                  : isOwner
+                    ? 'You are the only member — this will delete the club.'
+                    : 'You will be removed from this club.'}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => leaveClub()}
+                  disabled={isLeaving}
+                  className="font-sans text-xs text-white bg-red-500 rounded-full px-4 py-1.5 hover:bg-red-600 transition-all disabled:opacity-50"
+                >
+                  {isLeaving ? 'Leaving…' : 'Confirm leave'}
+                </button>
+                <button
+                  onClick={() => setConfirmLeave(false)}
+                  className="font-sans text-xs text-stone-500 border border-stone-200 rounded-full px-4 py-1.5 hover:bg-stone-100 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {showAddMeeting && (
         <AddMeetingModal

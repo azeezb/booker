@@ -31,4 +31,12 @@ public class UserService(IUserRepository userRepository) : IUserService
         user.Name = name;
         return await userRepository.UpdateAsync(user);
     }
+
+    public async Task<bool> DeleteUserAsync(string auth0Id)
+    {
+        var user = await userRepository.GetByAuth0IdAsync(auth0Id);
+        if (user is null) return false;
+        await userRepository.DeleteAsync(user.Id);
+        return true;
+    }
 }

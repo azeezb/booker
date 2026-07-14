@@ -3,6 +3,7 @@ using System;
 using Booker.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Booker.Infrastructure.Migrations
 {
     [DbContext(typeof(BookerDbContext))]
-    partial class BookerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260713093946_AddReadingStatus")]
+    partial class AddReadingStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -128,7 +131,7 @@ namespace Booker.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AddedByUserId")
+                    b.Property<Guid>("AddedByUserId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("BookId")
@@ -244,7 +247,8 @@ namespace Booker.Infrastructure.Migrations
                     b.HasOne("Booker.Core.Entities.User", "AddedBy")
                         .WithMany()
                         .HasForeignKey("AddedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Booker.Core.Entities.Book", "Book")
                         .WithMany()

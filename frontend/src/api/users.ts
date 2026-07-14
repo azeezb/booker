@@ -18,6 +18,7 @@ export interface NextMeeting {
   book: {
     id: string
     googleBookId: string
+    isbn: string | null
     title: string
     author: string
     coverUrl: string | null
@@ -27,3 +28,6 @@ export interface NextMeeting {
 
 export const getNextMeeting = (client: AxiosInstance) =>
   client.get<NextMeeting>('/user/next-meeting').then(r => r.data)
+
+export const deleteUser = (client: AxiosInstance) =>
+  client.delete('/user').then(r => r.data)

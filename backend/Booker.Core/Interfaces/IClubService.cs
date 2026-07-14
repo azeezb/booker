@@ -10,4 +10,7 @@ public interface IClubService
     Task<List<ClubMember>> GetMembersAsync(Guid clubId);
     Task<ClubMember?> GetMemberAsync(Guid clubId, Guid userId);
     Task<Club?> UpdateFrequencyAsync(Guid clubId, MeetingFrequency? frequency);
+    Task<Club?> UpdateClubAsync(Guid clubId, string name, string description);
+    Task<bool> LeaveClubAsync(Guid clubId, Guid userId);
+    Task<bool> RemoveMemberAsync(Guid clubId, Guid requesterId, Guid targetUserId);
 }

@@ -11,4 +11,7 @@ public interface IClubRepository
     Task<ClubMember?> GetMemberAsync(Guid clubId, Guid userId);
     Task<List<ClubMember>> GetMembersAsync(Guid clubId);
     Task AddMemberAsync(ClubMember member);
+    Task<ClubMember> UpdateMemberAsync(ClubMember member);
+    Task RemoveMemberAsync(Guid clubId, Guid userId);
+    Task DeleteAsync(Guid clubId);
 }

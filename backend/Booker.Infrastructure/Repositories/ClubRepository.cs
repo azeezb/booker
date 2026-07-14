@@ -48,4 +48,31 @@ public class ClubRepository(BookerDbContext db) : IClubRepository
         db.ClubMembers.Add(member);
         await db.SaveChangesAsync();
     }
+
+    public async Task<ClubMember> UpdateMemberAsync(ClubMember member)
+    {
+        db.ClubMembers.Update(member);
+        await db.SaveChangesAsync();
+        return member;
+    }
+
+    public async Task RemoveMemberAsync(Guid clubId, Guid userId)
+    {
+        var member = await db.ClubMembers.FirstOrDefaultAsync(cm => cm.ClubId == clubId && cm.UserId == userId);
+        if (member is not null)
+        {
+            db.ClubMembers.Remove(member);
+            await db.SaveChangesAsync();
+        }
+    }
+
+    public async Task DeleteAsync(Guid clubId)
+    {
+        var club = await db.Clubs.FindAsync(clubId);
+        if (club is not null)
+        {
+            db.Clubs.Remove(club);
+            await db.SaveChangesAsync();
+        }
+    }
 }

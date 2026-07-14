@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
+import { useNavigate } from 'react-router-dom'
 import { createApiClient, publicApiClient } from '../lib/apiClient'
 import {
   getPublicClubs, getMyClubs, getClub, createClub, joinClub,
   updateFrequency, getClubMembers, getClubMeetings, createMeeting, updateMeeting,
+  updateClub, leaveClub, removeMember,
 } from '../api/clubs'
 
 export function usePublicClubs() {
@@ -117,5 +119,45 @@ export function useUpdateMeeting(clubId: string) {
       return updateMeeting(createApiClient(token), clubId, meetingId, data)
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['clubs', clubId, 'meetings'] }),
+  })
+}
+
+export function useUpdateClub(clubId: string) {
+  const { getAccessTokenSilently } = useAuth0()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: { name: string; description: string }) => {
+      const token = await getAccessTokenSilently()
+      return updateClub(createApiClient(token), clubId, data)
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['clubs', clubId] }),
+  })
+}
+
+export function useLeaveClub(clubId: string) {
+  const { getAccessTokenSilently } = useAuth0()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getAccessTokenSilently()
+      return leaveClub(createApiClient(token), clubId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clubs'] })
+      navigate('/clubs')
+    },
+  })
+}
+
+export function useRemoveMember(clubId: string) {
+  const { getAccessTokenSilently } = useAuth0()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const token = await getAccessTokenSilently()
+      return removeMember(createApiClient(token), clubId, userId)
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['clubs', clubId, 'members'] }),
   })
 }

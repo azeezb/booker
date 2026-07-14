@@ -2,6 +2,7 @@ namespace Booker.API.Controllers;
 
 public record CreateClubRequest(string Name, string Description, bool IsPublic);
 public record UpdateFrequencyRequest(MeetingFrequency? Frequency);
+public record UpdateClubRequest(string Name, string Description);
 
 [ApiController]
 [Route("api/club")]
@@ -83,6 +84,42 @@ public class ClubController(IClubService clubService, IUserService userService) 
 
         var club = await clubService.UpdateFrequencyAsync(id, request.Frequency);
         return club is null ? NotFound() : Ok(club);
+    }
+
+    [Authorize]
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> UpdateClub(Guid id, [FromBody] UpdateClubRequest request)
+    {
+        var user = await GetCurrentUserAsync();
+        if (user is null) return Unauthorized();
+
+        var member = await clubService.GetMemberAsync(id, user.Id);
+        if (member is null || member.Role != "owner") return Forbid();
+
+        var club = await clubService.UpdateClubAsync(id, request.Name, request.Description);
+        return club is null ? NotFound() : Ok(club);
+    }
+
+    [Authorize]
+    [HttpDelete("{id}/leave")]
+    public async Task<IActionResult> LeaveClub(Guid id)
+    {
+        var user = await GetCurrentUserAsync();
+        if (user is null) return Unauthorized();
+
+        var left = await clubService.LeaveClubAsync(id, user.Id);
+        return left ? Ok() : NotFound();
+    }
+
+    [Authorize]
+    [HttpDelete("{id}/member/{userId}")]
+    public async Task<IActionResult> RemoveMember(Guid id, Guid userId)
+    {
+        var requester = await GetCurrentUserAsync();
+        if (requester is null) return Unauthorized();
+
+        var removed = await clubService.RemoveMemberAsync(id, requester.Id, userId);
+        return removed ? Ok() : Forbid();
     }
 
     private async Task<User?> GetCurrentUserAsync()

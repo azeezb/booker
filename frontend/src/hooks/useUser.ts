@@ -1,7 +1,7 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
 import { createApiClient } from '../lib/apiClient'
-import { syncUser, getMe, getNextMeeting } from '../api/users'
+import { syncUser, getMe, getNextMeeting, deleteUser } from '../api/users'
 
 export function useCurrentUser() {
   const { user, getAccessTokenSilently } = useAuth0()
@@ -39,6 +39,21 @@ export function useNextMeeting() {
       } catch {
         return null
       }
+    },
+  })
+}
+
+export function useDeleteUser() {
+  const { getAccessTokenSilently, logout } = useAuth0()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getAccessTokenSilently()
+      return deleteUser(createApiClient(token))
+    },
+    onSuccess: () => {
+      queryClient.clear()
+      logout({ logoutParams: { returnTo: window.location.origin } })
     },
   })
 }

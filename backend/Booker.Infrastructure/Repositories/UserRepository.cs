@@ -18,4 +18,14 @@ public class UserRepository(BookerDbContext db) : IUserRepository
         await db.SaveChangesAsync();
         return user;
     }
+
+    public async Task DeleteAsync(Guid userId)
+    {
+        var user = await db.Users.FindAsync(userId);
+        if (user is not null)
+        {
+            db.Users.Remove(user);
+            await db.SaveChangesAsync();
+        }
+    }
 }

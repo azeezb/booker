@@ -34,3 +34,12 @@ export const updateMeeting = (
   meetingId: string,
   data: { scheduledDate?: string; bookId?: string; notes?: string }
 ) => client.patch<Meeting>(`/club/${clubId}/meeting/${meetingId}`, data).then(r => r.data)
+
+export const updateClub = (client: AxiosInstance, clubId: string, data: { name: string; description: string }) =>
+  client.patch<Club>(`/club/${clubId}`, data).then(r => r.data)
+
+export const leaveClub = (client: AxiosInstance, clubId: string) =>
+  client.delete(`/club/${clubId}/leave`).then(r => r.data)
+
+export const removeMember = (client: AxiosInstance, clubId: string, userId: string) =>
+  client.delete(`/club/${clubId}/member/${userId}`).then(r => r.data)
