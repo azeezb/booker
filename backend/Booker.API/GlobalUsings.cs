@@ -1,3 +1,4 @@
+global using System.ComponentModel.DataAnnotations;
 global using Booker.Core.Entities;
 global using Booker.Core.Enums;
 global using Booker.Core.Interfaces;

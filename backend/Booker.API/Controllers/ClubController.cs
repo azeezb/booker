@@ -1,8 +1,13 @@
 namespace Booker.API.Controllers;
 
-public record CreateClubRequest(string Name, string Description, bool IsPublic);
+public record CreateClubRequest(
+    [property: Required, MaxLength(100)] string Name,
+    [property: MaxLength(500)] string Description,
+    bool IsPublic);
 public record UpdateFrequencyRequest(MeetingFrequency? Frequency);
-public record UpdateClubRequest(string Name, string Description);
+public record UpdateClubRequest(
+    [property: Required, MaxLength(100)] string Name,
+    [property: MaxLength(500)] string Description);
 
 [ApiController]
 [Route("api/club")]
@@ -16,7 +21,17 @@ public class ClubController(IClubService clubService, IUserService userService) 
     public async Task<IActionResult> GetClub(Guid id)
     {
         var club = await clubService.GetByIdAsync(id);
-        return club is null ? NotFound() : Ok(club);
+        if (club is null) return NotFound();
+
+        if (!club.IsPublic)
+        {
+            var user = await GetCurrentUserAsync();
+            if (user is null) return Unauthorized();
+            var member = await clubService.GetMemberAsync(id, user.Id);
+            if (member is null) return Forbid();
+        }
+
+        return Ok(club);
     }
 
     [Authorize]
@@ -42,7 +57,7 @@ public class ClubController(IClubService clubService, IUserService userService) 
         return Ok(members.Select(m => new
         {
             m.Id,
-            m.Role,
+            Role = m.Role.ToString().ToLower(),
             m.JoinedAt,
             User = new { m.User.Id, m.User.Name }
         }));
@@ -80,7 +95,7 @@ public class ClubController(IClubService clubService, IUserService userService) 
         if (user is null) return Unauthorized();
 
         var member = await clubService.GetMemberAsync(id, user.Id);
-        if (member is null || member.Role != "owner") return Forbid();
+        if (member is null || member.Role != MemberRole.Owner) return Forbid();
 
         var club = await clubService.UpdateFrequencyAsync(id, request.Frequency);
         return club is null ? NotFound() : Ok(club);
@@ -94,7 +109,7 @@ public class ClubController(IClubService clubService, IUserService userService) 
         if (user is null) return Unauthorized();
 
         var member = await clubService.GetMemberAsync(id, user.Id);
-        if (member is null || member.Role != "owner") return Forbid();
+        if (member is null || member.Role != MemberRole.Owner) return Forbid();
 
         var club = await clubService.UpdateClubAsync(id, request.Name, request.Description);
         return club is null ? NotFound() : Ok(club);

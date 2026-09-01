@@ -30,6 +30,11 @@ public class BookerDbContext(DbContextOptions<BookerDbContext> options) : DbCont
         {
             e.HasKey(cm => cm.Id);
             e.HasIndex(cm => new { cm.ClubId, cm.UserId }).IsUnique();
+            e.Property(cm => cm.Role)
+             .HasConversion(
+                 v => v.ToString().ToLower(),
+                 v => Enum.Parse<MemberRole>(v, ignoreCase: true))
+             .HasMaxLength(10);
             e.HasOne(cm => cm.Club).WithMany().HasForeignKey(cm => cm.ClubId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(cm => cm.User).WithMany().HasForeignKey(cm => cm.UserId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -44,6 +49,8 @@ public class BookerDbContext(DbContextOptions<BookerDbContext> options) : DbCont
         modelBuilder.Entity<Meeting>(e =>
         {
             e.HasKey(m => m.Id);
+            e.HasIndex(m => m.ClubId);
+            e.HasIndex(m => m.ScheduledDate);
             e.HasOne(m => m.Club).WithMany().HasForeignKey(m => m.ClubId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(m => m.Book).WithMany().HasForeignKey(m => m.BookId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(m => m.AddedBy).WithMany().HasForeignKey(m => m.AddedByUserId).OnDelete(DeleteBehavior.SetNull);

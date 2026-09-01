@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Search, BookOpen } from 'lucide-react'
+import { X, Search } from 'lucide-react'
+import BookCover from '../BookCover'
 import { useBookSearch } from '../../hooks/useBooks'
 import { useUpsertBook } from '../../hooks/useBooks'
 import { useUpdateMeeting } from '../../hooks/useClubs'
@@ -15,7 +16,7 @@ export default function BookSearchModal({ clubId, meetingId, onClose }: Props) {
   const [query, setQuery] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { data: results = [], isFetching } = useBookSearch(query)
+  const { data: results = [], isFetching, isError, refetch } = useBookSearch(query)
   const { mutate: upsertBook, isPending: isUpserting } = useUpsertBook()
   const { mutate: updateMeeting, isPending: isUpdating } = useUpdateMeeting(clubId)
 
@@ -67,7 +68,19 @@ export default function BookSearchModal({ clubId, meetingId, onClose }: Props) {
             <p className="font-sans text-sm text-stone-400 text-center py-6">Searching…</p>
           )}
 
-          {!isFetching && query.length >= 2 && results.length === 0 && (
+          {!isFetching && isError && (
+            <div className="text-center py-6 space-y-3">
+              <p className="font-sans text-sm text-stone-400">Book search unavailable.</p>
+              <button
+                onClick={() => refetch()}
+                className="text-xs font-sans text-stone-600 border border-stone-300 rounded-full px-4 py-1.5 hover:bg-stone-800 hover:text-white hover:border-stone-800 transition-all"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {!isFetching && !isError && query.length >= 2 && results.length === 0 && (
             <p className="font-sans text-sm text-stone-400 text-center py-6">No results found.</p>
           )}
 
@@ -76,17 +89,14 @@ export default function BookSearchModal({ clubId, meetingId, onClose }: Props) {
               key={book.googleBookId}
               className="flex items-center gap-3 p-3 rounded-2xl hover:bg-stone-50 transition-colors"
             >
-              {book.coverUrl ? (
-                <img
-                  src={book.coverUrl}
-                  alt={book.title}
-                  className="w-10 h-14 object-cover rounded-lg shrink-0 shadow-sm"
-                />
-              ) : (
-                <div className="w-10 h-14 bg-stone-100 rounded-lg shrink-0 flex items-center justify-center">
-                  <BookOpen size={16} strokeWidth={1.5} className="text-stone-300" />
-                </div>
-              )}
+              <BookCover
+                coverUrl={book.coverUrl}
+                isbn={book.isbn}
+                title={book.title}
+                className="w-10 h-14 object-cover rounded-lg shrink-0 shadow-sm"
+                placeholderClassName="w-10 h-14 bg-stone-100 rounded-lg shrink-0 flex items-center justify-center"
+                iconSize={16}
+              />
 
               <div className="flex-1 min-w-0">
                 <p className="font-sans text-sm font-medium text-stone-800 truncate">{book.title}</p>

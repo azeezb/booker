@@ -1,15 +1,16 @@
 import { useEffect } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 
 export default function ProtectedRoute() {
-  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0()
+  const { isAuthenticated, isLoading } = useAuth0()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      loginWithRedirect()
+      navigate('/', { replace: true })
     }
-  }, [isLoading, isAuthenticated, loginWithRedirect])
+  }, [isLoading, isAuthenticated, navigate])
 
   if (isLoading) {
     return (

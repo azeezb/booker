@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, BookOpen, Calendar, ChevronDown, Users, Pencil, X, Check } from 'lucide-react'
+import { ArrowLeft, Calendar, ChevronDown, Users, Pencil, X, Check } from 'lucide-react'
+import BookCover from '../components/BookCover'
 import { useClub, useClubMembers, useClubMeetings, useUpdateFrequency, useUpdateClub, useLeaveClub, useRemoveMember } from '../hooks/useClubs'
 import { useCurrentUser } from '../hooks/useUser'
 import AddMeetingModal from '../components/clubs/AddMeetingModal'
@@ -254,17 +255,13 @@ export default function ClubDetail() {
               >
                 <div className="flex items-start gap-3">
                   {/* Cover thumbnail */}
-                  {m.book?.coverUrl ? (
-                    <img
-                      src={m.book.coverUrl}
-                      alt={m.book.title}
-                      className="w-10 h-14 object-cover rounded-lg shrink-0 shadow-sm"
-                    />
-                  ) : (
-                    <div className="w-10 h-14 bg-stone-100 rounded-lg shrink-0 flex items-center justify-center">
-                      <BookOpen size={14} strokeWidth={1.5} className="text-stone-300" />
-                    </div>
-                  )}
+                  <BookCover
+                    coverUrl={m.book?.coverUrl}
+                    title={m.book?.title ?? ''}
+                    className="w-10 h-14 object-cover rounded-lg shrink-0 shadow-sm"
+                    placeholderClassName="w-10 h-14 bg-stone-100 rounded-lg shrink-0 flex items-center justify-center"
+                    iconSize={14}
+                  />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">

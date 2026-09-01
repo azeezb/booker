@@ -17,8 +17,15 @@ public class BookController(IBookSearchService bookSearchService, IBookService b
     public async Task<IActionResult> Search([FromQuery] string q)
     {
         if (string.IsNullOrWhiteSpace(q)) return BadRequest("Query is required");
-        var results = await bookSearchService.SearchAsync(q);
-        return Ok(results);
+        try
+        {
+            var results = await bookSearchService.SearchAsync(q);
+            return Ok(results);
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(502, "Book search unavailable. Please try again.");
+        }
     }
 
     [Authorize]

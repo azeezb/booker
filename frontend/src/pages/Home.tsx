@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, BookOpen, Users, Check, ShoppingBag, ExternalLink } from 'lucide-react'
+import BookCover from '../components/BookCover'
 import { useCurrentUser } from '../hooks/useUser'
 import { useNextMeeting } from '../hooks/useUser'
 import { useReadingStatus, useUpdateReadingStatus } from '../hooks/useReadingStatus'
@@ -130,7 +131,7 @@ interface FindBookBubbleProps {
 }
 
 function FindBookBubble({ title, author, isbn }: FindBookBubbleProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const links = buildRetailerLinks(title, author, isbn)
 
   return (
@@ -171,6 +172,24 @@ function FindBookBubble({ title, author, isbn }: FindBookBubbleProps) {
             close
           </button>
         </div>
+      )}
+    </div>
+  )
+}
+
+interface BubblesColumnProps {
+  clubId: string
+  meetingId: string
+  book: { title: string; author: string; isbn: string | null | undefined }
+}
+
+function BubblesColumn({ clubId, meetingId, book }: BubblesColumnProps) {
+  const { data: status } = useReadingStatus(clubId, meetingId)
+  return (
+    <div className="flex flex-col gap-3 w-44 flex-shrink-0 self-stretch">
+      <ReadingStatusBubble clubId={clubId} meetingId={meetingId} />
+      {!status?.hasBook && (
+        <FindBookBubble title={book.title} author={book.author} isbn={book.isbn} />
       )}
     </div>
   )
@@ -217,21 +236,16 @@ export default function Home() {
             onClick={() => navigate(`/clubs/${nextMeeting.club.id}`)}
           >
             {/* Book cover */}
-            {nextMeeting.book?.coverUrl ? (
-              <div className="flex justify-center pt-8 pb-4 bg-gradient-to-b from-stone-50 to-transparent">
-                <img
-                  src={nextMeeting.book.coverUrl}
-                  alt={nextMeeting.book.title}
-                  className="w-28 shadow-xl rounded-lg"
-                />
-              </div>
-            ) : (
-              <div className="flex justify-center pt-8 pb-4">
-                <div className="w-28 h-40 bg-stone-100 rounded-lg flex items-center justify-center">
-                  <BookOpen size={28} strokeWidth={1} className="text-stone-300" />
-                </div>
-              </div>
-            )}
+            <div className="flex justify-center pt-8 pb-4 bg-gradient-to-b from-stone-50 to-transparent">
+              <BookCover
+                coverUrl={nextMeeting.book?.coverUrl}
+                isbn={nextMeeting.book?.isbn}
+                title={nextMeeting.book?.title ?? ''}
+                className="w-28 shadow-xl rounded-lg"
+                placeholderClassName="w-28 h-40 bg-stone-100 rounded-lg flex items-center justify-center"
+                iconSize={28}
+              />
+            </div>
 
             <div className="px-6 pb-6 space-y-3">
               {nextMeeting.book ? (
@@ -278,16 +292,12 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Bubbles column — only shown when there's a book assigned */}
           {nextMeeting.book && (
-            <div className="flex flex-col gap-3 w-44 flex-shrink-0 self-stretch">
-              <ReadingStatusBubble clubId={nextMeeting.club.id} meetingId={nextMeeting.id} />
-              <FindBookBubble
-                title={nextMeeting.book.title}
-                author={nextMeeting.book.author}
-                isbn={nextMeeting.book.isbn}
-              />
-            </div>
+            <BubblesColumn
+              clubId={nextMeeting.club.id}
+              meetingId={nextMeeting.id}
+              book={nextMeeting.book}
+            />
           )}
         </div>
       )}
