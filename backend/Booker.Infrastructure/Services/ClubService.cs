@@ -36,7 +36,7 @@ public class ClubService(IClubRepository clubRepository) : IClubService
             Id = Guid.NewGuid(),
             ClubId = club.Id,
             UserId = userId,
-            Role = "owner",
+            Role = MemberRole.Owner,
             JoinedAt = DateTime.UtcNow
         });
 
@@ -53,7 +53,7 @@ public class ClubService(IClubRepository clubRepository) : IClubService
             Id = Guid.NewGuid(),
             ClubId = clubId,
             UserId = userId,
-            Role = "member",
+            Role = MemberRole.Member,
             JoinedAt = DateTime.UtcNow
         });
 
@@ -82,7 +82,7 @@ public class ClubService(IClubRepository clubRepository) : IClubService
         var member = await clubRepository.GetMemberAsync(clubId, userId);
         if (member is null) return false;
 
-        if (member.Role == "owner")
+        if (member.Role == MemberRole.Owner)
         {
             var allMembers = await clubRepository.GetMembersAsync(clubId);
             if (allMembers.Count == 1)
@@ -91,7 +91,7 @@ public class ClubService(IClubRepository clubRepository) : IClubService
                 return true;
             }
             var nextOwner = allMembers.First(m => m.UserId != userId);
-            nextOwner.Role = "owner";
+            nextOwner.Role = MemberRole.Owner;
             await clubRepository.UpdateMemberAsync(nextOwner);
         }
 
@@ -102,7 +102,7 @@ public class ClubService(IClubRepository clubRepository) : IClubService
     public async Task<bool> RemoveMemberAsync(Guid clubId, Guid requesterId, Guid targetUserId)
     {
         var requester = await clubRepository.GetMemberAsync(clubId, requesterId);
-        if (requester is null || requester.Role != "owner") return false;
+        if (requester is null || requester.Role != MemberRole.Owner) return false;
         if (requesterId == targetUserId) return false;
 
         var target = await clubRepository.GetMemberAsync(clubId, targetUserId);

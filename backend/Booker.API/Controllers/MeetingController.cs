@@ -1,7 +1,7 @@
 namespace Booker.API.Controllers;
 
-public record CreateMeetingRequest(DateTime ScheduledDate, string? Notes);
-public record UpdateMeetingRequest(DateTime? ScheduledDate, Guid? BookId, string? Notes);
+public record CreateMeetingRequest(DateTime ScheduledDate, [property: MaxLength(2000)] string? Notes);
+public record UpdateMeetingRequest(DateTime? ScheduledDate, Guid? BookId, [property: MaxLength(2000)] string? Notes);
 public record UpdateReadingStatusRequest(bool HasBook, bool HasStarted);
 
 [ApiController]
@@ -43,7 +43,7 @@ public class MeetingController(IMeetingService meetingService, IClubService club
         if (user is null) return Unauthorized();
 
         var member = await clubService.GetMemberAsync(clubId, user.Id);
-        if (member is null || member.Role != "owner") return Forbid();
+        if (member is null || member.Role != MemberRole.Owner) return Forbid();
 
         var club = await clubService.GetByIdAsync(clubId);
         if (club is null) return NotFound();
@@ -88,7 +88,10 @@ public class MeetingController(IMeetingService meetingService, IClubService club
         if (user is null) return Unauthorized();
 
         var member = await clubService.GetMemberAsync(clubId, user.Id);
-        if (member is null || member.Role != "owner") return Forbid();
+        if (member is null || member.Role != MemberRole.Owner) return Forbid();
+
+        var existing = await meetingService.GetByIdAsync(meetingId);
+        if (existing is null || existing.ClubId != clubId) return NotFound();
 
         var meeting = await meetingService.UpdateAsync(
             meetingId,

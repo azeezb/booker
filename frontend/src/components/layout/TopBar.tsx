@@ -9,7 +9,7 @@ export default function TopBar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4 bg-white/80 backdrop-blur-sm border-b border-stone-100 flex items-center justify-between">
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/home')}
         className="flex items-center gap-2 font-display text-2xl font-semibold tracking-wide text-stone-800"
       >
         <img src="/favicon.svg" alt="" className="w-6 h-6" />

@@ -38,6 +38,14 @@ export function useClub(clubId: string) {
   })
 }
 
+export function usePublicClub(clubId: string) {
+  return useQuery({
+    queryKey: ['browse', clubId],
+    queryFn: () => getClub(publicApiClient, clubId),
+    enabled: !!clubId,
+  })
+}
+
 export function useClubMembers(clubId: string) {
   const { getAccessTokenSilently } = useAuth0()
   return useQuery({

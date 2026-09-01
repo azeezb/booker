@@ -5,6 +5,9 @@ public class MeetingService(IMeetingRepository meetingRepository) : IMeetingServ
     public async Task<List<Meeting>> GetByClubIdAsync(Guid clubId)
         => await meetingRepository.GetByClubIdAsync(clubId);
 
+    public async Task<Meeting?> GetByIdAsync(Guid meetingId)
+        => await meetingRepository.GetByIdAsync(meetingId);
+
     public async Task<Meeting?> GetNextForUserAsync(Guid userId)
         => await meetingRepository.GetNextForUserAsync(userId);
 
@@ -30,7 +33,7 @@ public class MeetingService(IMeetingRepository meetingRepository) : IMeetingServ
 
         if (scheduledDate.HasValue) meeting.ScheduledDate = scheduledDate.Value;
         if (bookId.HasValue) meeting.BookId = bookId.Value;
-        if (notes is not null) meeting.Notes = notes;
+        if (notes is not null) meeting.Notes = notes == string.Empty ? null : notes;
 
         return await meetingRepository.UpdateAsync(meeting);
     }

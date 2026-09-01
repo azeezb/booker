@@ -2,7 +2,7 @@ import { Home, Users, User, Settings } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 const navItems = [
-  { icon: Home, label: 'Home', path: '/' },
+  { icon: Home, label: 'Home', path: '/home' },
   { icon: Users, label: 'Clubs', path: '/clubs' },
   { icon: User, label: 'Account', path: '/account' },
   { icon: Settings, label: 'Settings', path: '/settings' },
@@ -16,7 +16,7 @@ export default function BottomNav() {
     <nav className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50">
       <div className="flex items-center gap-1 bg-white/30 backdrop-blur-md rounded-full px-4 py-3 shadow-lg border border-white/40">
         {navItems.map(({ icon: Icon, label, path }) => {
-          const active = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
+          const active = location.pathname === path || location.pathname.startsWith(path + '/')
           return (
             <button
               key={path}

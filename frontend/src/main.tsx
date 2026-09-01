@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Auth0ProviderWithNavigate from './components/auth/Auth0ProviderWithNavigate'
 import './index.css'
 import App from './App.tsx'
+import ErrorBoundary from './components/ErrorBoundary.tsx'
 
 const queryClient = new QueryClient()
 
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Auth0ProviderWithNavigate>
-          <App />
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
         </Auth0ProviderWithNavigate>
       </BrowserRouter>
     </QueryClientProvider>
