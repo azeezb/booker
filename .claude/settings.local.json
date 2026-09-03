@@ -5,13 +5,10 @@
       "Bash(dotnet build:*)",
       "Skill(update-config)",
       "Bash(npx tsc:*)",
-      "Bash(PGPASSWORD=devpassword psql -h localhost -p 5432 -U admin -d booker -c \"SELECT \\\\\"Id\\\\\", \\\\\"Title\\\\\", \\\\\"Author\\\\\", \\\\\"Isbn\\\\\", \\\\\"GoogleBookId\\\\\", \\\\\"CoverUrl\\\\\" FROM \\\\\"Books\\\\\" WHERE LOWER\\(\\\\\"Title\\\\\"\\) LIKE '%slut%';\" 2>&1)",
+      "Bash(PGPASSWORD=devpassword psql:*)",
       "Bash(docker ps:*)",
       "Bash(docker exec:*)",
-      "Bash(gh pr:*)",
-      "Bash(where gh:*)",
-      "Bash(winget list:*)",
-      "Bash(cmd /c \"where gh\" 2>&1)"
+      "Bash(gh pr:*)"
     ]
   }
 }

@@ -43,8 +43,19 @@ builder.Services.AddScoped<IMeetingReadingStatusService, MeetingReadingStatusSer
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddHttpClient<IBookSearchService, GoogleBooksService>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddHttpClient<IEmailService, ResendEmailService>();
+builder.Services.AddHostedService<Booker.API.Services.NotificationBackgroundService>();
 
 var app = builder.Build();
+
+if (args.Length >= 2 && args[0] == "--seed-demo")
+{
+    using var scope = app.Services.CreateScope();
+    await Booker.Infrastructure.Seed.DemoSeeder.SeedAsync(scope.ServiceProvider, args[1]);
+    return;
+}
 
 Console.WriteLine("Starting Booker API...");
 Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
