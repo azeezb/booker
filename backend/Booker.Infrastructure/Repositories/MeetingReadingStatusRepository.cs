@@ -6,6 +6,11 @@ public class MeetingReadingStatusRepository(BookerDbContext db) : IMeetingReadin
         => await db.MeetingReadingStatuses
             .FirstOrDefaultAsync(s => s.MeetingId == meetingId && s.UserId == userId);
 
+    public async Task<List<MeetingReadingStatus>> GetByMeetingIdAsync(Guid meetingId)
+        => await db.MeetingReadingStatuses
+            .Where(s => s.MeetingId == meetingId)
+            .ToListAsync();
+
     public async Task<MeetingReadingStatus> UpsertAsync(Guid meetingId, Guid userId, bool hasBook, bool hasStarted)
     {
         var existing = await GetAsync(meetingId, userId);

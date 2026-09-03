@@ -7,7 +7,13 @@ public class UserService(IUserRepository userRepository) : IUserService
         var user = await userRepository.GetByAuth0IdAsync(auth0Id);
 
         if (user is not null)
-            return user;
+        {
+            if (user.Email == email)
+                return user;
+
+            user.Email = email;
+            return await userRepository.UpdateAsync(user);
+        }
 
         user = new User
         {

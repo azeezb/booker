@@ -26,6 +26,20 @@ public class MeetingRepository(BookerDbContext db) : IMeetingRepository
             .OrderBy(m => m.ScheduledDate)
             .FirstOrDefaultAsync();
 
+    public async Task<List<Meeting>> GetOnDateAsync(DateTime utcDate)
+        => await db.Meetings
+            .Where(m => m.ScheduledDate.Date == utcDate.Date)
+            .Include(m => m.Club)
+            .Include(m => m.Book)
+            .ToListAsync();
+
+    public async Task<Meeting?> GetNextAfterAsync(Guid clubId, DateTime afterDate)
+        => await db.Meetings
+            .Where(m => m.ClubId == clubId && m.ScheduledDate > afterDate)
+            .Include(m => m.Book)
+            .OrderBy(m => m.ScheduledDate)
+            .FirstOrDefaultAsync();
+
     public async Task<Meeting> CreateAsync(Meeting meeting)
     {
         db.Meetings.Add(meeting);

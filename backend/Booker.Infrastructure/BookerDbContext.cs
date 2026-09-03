@@ -8,6 +8,7 @@ public class BookerDbContext(DbContextOptions<BookerDbContext> options) : DbCont
     public DbSet<Book> Books => Set<Book>();
     public DbSet<Meeting> Meetings => Set<Meeting>();
     public DbSet<MeetingReadingStatus> MeetingReadingStatuses => Set<MeetingReadingStatus>();
+    public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -62,6 +63,17 @@ public class BookerDbContext(DbContextOptions<BookerDbContext> options) : DbCont
             e.HasIndex(s => new { s.MeetingId, s.UserId }).IsUnique();
             e.HasOne(s => s.Meeting).WithMany().HasForeignKey(s => s.MeetingId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(s => s.User).WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<NotificationLog>(e =>
+        {
+            e.HasKey(n => n.Id);
+            e.HasIndex(n => new { n.MeetingId, n.UserId, n.Type }).IsUnique();
+            e.Property(n => n.Type)
+             .HasConversion<string>()
+             .HasMaxLength(20);
+            e.HasOne(n => n.Meeting).WithMany().HasForeignKey(n => n.MeetingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(n => n.User).WithMany().HasForeignKey(n => n.UserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
