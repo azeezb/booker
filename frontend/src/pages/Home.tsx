@@ -38,8 +38,8 @@ function useBookDescription(googleBookId: string | undefined) {
   })
 }
 
-function buildRetailerLinks(title: string, author: string, isbn: string | null | undefined) {
-  const q = isbn ?? encodeURIComponent(`${title} ${author}`)
+function buildRetailerLinks(title: string, author: string) {
+  const q = encodeURIComponent(`${title} ${author}`)
   return [
     {
       name: 'Dymocks',
@@ -48,10 +48,6 @@ function buildRetailerLinks(title: string, author: string, isbn: string | null |
     {
       name: 'QBD',
       url: `https://www.qbd.com.au/search/?q=${q}`,
-    },
-    {
-      name: 'Collins Booksellers',
-      url: `https://www.collinsbooksellers.com.au/search?q=${q}`,
     },
     {
       name: 'Amazon AU',
@@ -127,12 +123,11 @@ function ReadingStatusBubble({ clubId, meetingId }: ReadingStatusBubbleProps) {
 interface FindBookBubbleProps {
   title: string
   author: string
-  isbn: string | null | undefined
 }
 
-function FindBookBubble({ title, author, isbn }: FindBookBubbleProps) {
+function FindBookBubble({ title, author }: FindBookBubbleProps) {
   const [open, setOpen] = useState(true)
-  const links = buildRetailerLinks(title, author, isbn)
+  const links = buildRetailerLinks(title, author)
 
   return (
     <div className="bg-white/70 backdrop-blur-sm border border-white/50 rounded-2xl shadow-sm p-5 text-left">
@@ -180,7 +175,7 @@ function FindBookBubble({ title, author, isbn }: FindBookBubbleProps) {
 interface BubblesColumnProps {
   clubId: string
   meetingId: string
-  book: { title: string; author: string; isbn: string | null | undefined }
+  book: { title: string; author: string }
 }
 
 function BubblesColumn({ clubId, meetingId, book }: BubblesColumnProps) {
@@ -189,7 +184,7 @@ function BubblesColumn({ clubId, meetingId, book }: BubblesColumnProps) {
     <div className="flex flex-col gap-3 w-44 flex-shrink-0 self-stretch">
       <ReadingStatusBubble clubId={clubId} meetingId={meetingId} />
       {!status?.hasBook && (
-        <FindBookBubble title={book.title} author={book.author} isbn={book.isbn} />
+        <FindBookBubble title={book.title} author={book.author} />
       )}
     </div>
   )

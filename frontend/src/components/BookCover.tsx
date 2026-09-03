@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BookOpen } from 'lucide-react'
 
 interface Props {
@@ -20,6 +20,10 @@ export default function BookCover({
 }: Props) {
   const olUrl = isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg` : null
   const [src, setSrc] = useState<string | null>(coverUrl ?? olUrl)
+
+  useEffect(() => {
+    setSrc(coverUrl ?? (isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg` : null))
+  }, [coverUrl, isbn])
 
   function handleError() {
     if (src !== olUrl && olUrl) {

@@ -9,6 +9,9 @@ const features = [
   { icon: Users, text: 'Manage your club, members, and schedules' },
 ]
 
+const demoEmail = import.meta.env.VITE_DEMO_EMAIL as string | undefined
+const demoPassword = import.meta.env.VITE_DEMO_PASSWORD as string | undefined
+
 export default function Landing() {
   const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0()
   const navigate = useNavigate()
@@ -60,6 +63,32 @@ export default function Landing() {
             Browse clubs
           </button>
         </div>
+
+        {demoEmail && demoPassword && (
+          <div className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-3xl p-6 space-y-4 shadow-sm text-left">
+            <p className="font-sans text-[10px] tracking-[0.15em] uppercase text-stone-400">Just looking?</p>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-sans text-xs text-stone-400">Email</span>
+                <span className="font-sans text-xs text-stone-800 bg-white/70 border border-stone-200 rounded-lg px-2.5 py-1">
+                  {demoEmail}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-sans text-xs text-stone-400">Password</span>
+                <span className="font-sans text-xs text-stone-800 bg-white/70 border border-stone-200 rounded-lg px-2.5 py-1">
+                  {demoPassword}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => loginWithRedirect({ authorizationParams: { login_hint: demoEmail } })}
+              className="w-full font-sans text-sm text-stone-600 border border-stone-300 rounded-full py-2.5 hover:bg-stone-800 hover:text-white hover:border-stone-800 transition-all"
+            >
+              Try the demo
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
